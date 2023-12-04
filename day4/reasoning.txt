@@ -1,0 +1,40 @@
+// [2,2,1,0]
+
+init state: num of copies => [1,1,1,1]
+
+prva iteracija: 
+ [1,2,2,1]
+
+druga iteracija
+ run two times because numOfCopies[2] = 2
+ [1,2,3,2]
+ [1,2,4,3]
+
+end => [1,2,4,3]
+moglo je samo [1,2, 2+2, 1+2]
+
+
+treca iteracija
+ run 4 times because numOfCopies[3] = 4
+ [1,2,4,4]
+ [1,2,4,5]
+ [1,2,4,6]
+ [1,2,4,7]
+
+this should be it in the end
+
+
+matches [4 2 3 1 0 0]
+init state [1,1,1, 1,1,1]
+
+prva iteracija 
+[1, 2, 2, 2, 2, 1, 1]
+
+druga iteracija 
+[1, 2, 4, 4, 2, 1, 1]
+
+treca iteracija
+[1, 2, 4, 8, 6, 5, 1]
+
+cetvrta iteracija
+[1, 2, 4, 8, 14, 1]
