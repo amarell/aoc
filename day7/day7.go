@@ -22,11 +22,6 @@ const (
 
 func main() {
 	file, err := os.Open("./input.txt")
-	// too high: 246591669
-	//   246417094
-	//   246340604
-	//   246340604
-	//   246285222
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,26 +34,23 @@ func main() {
 		lines = append(lines, scanner.Text())
 	}
 
-	hands := parseLines(lines)
-	rankedHands := rankHands(hands)
+	parts := []bool{true, false}
 
-	r := 0
-	for idx, handRank := range rankedHands {
-		r += (idx + 1) * handRank.hand.bid
+	for _, p := range parts {
+		hands := parseLines(lines, p)
+		rankedHands := rankHands(hands, p)
+
+		r := 0
+		for idx, handRank := range rankedHands {
+			r += (idx + 1) * handRank.hand.bid
+		}
+
+		if p {
+			fmt.Println("Part 1", r)
+		} else {
+			fmt.Println("Part 2", r)
+		}
 	}
-
-	fmt.Println("Part 1", r)
-
-	hands = parseLinesPart2(lines)
-	rankedHandsPart2 := rankHandsPart2(hands)
-
-	//	fmt.Println(rankedHandsPart2[0])
-	r = 0
-	for idx, handRank := range rankedHandsPart2 {
-		r += (idx + 1) * handRank.hand.bid
-	}
-
-	fmt.Println("Part 2", r)
 
 	if err := scanner.Err(); err != nil {
 		log.Println(err)
@@ -70,7 +62,7 @@ func rankHandsPart2(hands []Hand) []HandRank {
 	handRanks := []HandRank{}
 
 	for _, hand := range hands {
-		handTypes = append(handTypes, hand.getHandTypePart2())
+		handTypes = append(handTypes, hand.getHandType(false))
 	}
 
 	for idx, hand := range hands {
@@ -89,17 +81,15 @@ func rankHandsPart2(hands []Hand) []HandRank {
 		return handRanks[i].t < handRanks[j].t
 	})
 
-	//	fmt.Println("Hand ranks", handRanks)
-
 	return handRanks
 }
 
-func rankHands(hands []Hand) []HandRank {
+func rankHands(hands []Hand, part1 bool) []HandRank {
 	handTypes := []int{}
 	handRanks := []HandRank{}
 
 	for _, hand := range hands {
-		handTypes = append(handTypes, hand.getHandType())
+		handTypes = append(handTypes, hand.getHandType(part1))
 	}
 
 	for idx, hand := range hands {
@@ -127,7 +117,7 @@ type HandRank struct {
 	t    int
 }
 
-func (hand Hand) getHandTypePart2() int {
+func (hand Hand) getHandType(part1 bool) int {
 	M := make(map[Card]int)
 	for _, card := range hand.cards {
 		M[card] = M[card] + 1
@@ -180,7 +170,7 @@ func (hand Hand) getHandTypePart2() int {
 		}
 	}
 
-	if M[Card{1}] > 0 {
+	if M[Card{1}] > 0 && !part1 {
 		if T == FOUR_OF_A_KIND {
 			return FIVE_OF_A_KIND
 		} else if T == FULL_HOUSE {
@@ -197,50 +187,9 @@ func (hand Hand) getHandTypePart2() int {
 		} else if T == HIGH_CARD {
 			return ONE_PAIR
 		}
-
 	}
 
 	return T
-}
-
-func (hand Hand) getHandType() int {
-	M := make(map[Card]int)
-	for _, card := range hand.cards {
-		M[card] = M[card] + 1
-	}
-	// 2
-	// full house
-	// four of a kind
-
-	// 3
-	// three of a kind
-	// two pair
-
-	// 4
-	// one pair
-	if len(M) == 1 {
-		return FIVE_OF_A_KIND
-	} else if len(M) == 5 {
-		return HIGH_CARD
-	} else if len(M) == 4 {
-		return ONE_PAIR
-	} else if len(M) == 3 {
-		for _, v := range M {
-			if v == 3 {
-				return THREE_OF_A_KIND
-			}
-		}
-
-		return TWO_PAIR
-	} else {
-		for _, v := range M {
-			if v == 4 {
-				return FOUR_OF_A_KIND
-			}
-		}
-
-		return FULL_HOUSE
-	}
 }
 
 type Hand struct {
@@ -266,8 +215,8 @@ func sortCardsInHands(hands []Hand) []Hand {
 	return newHands
 }
 
-func parseLinesPart2(lines []string) []Hand {
-	cardValueMap := getCardMapPart2()
+func parseLines(lines []string, part1 bool) []Hand {
+	cardValueMap := getCardMap(part1)
 
 	hands := []Hand{}
 	for _, line := range lines {
@@ -294,70 +243,30 @@ func parseLinesPart2(lines []string) []Hand {
 	return hands
 }
 
-func parseLines(lines []string) []Hand {
-	cardValueMap := getCardMap()
+func getCardMap(part1 bool) map[rune]int {
+	cardValueMap := make(map[rune]int)
 
-	hands := []Hand{}
-	for _, line := range lines {
-		cards := []Card{}
+	cardValueMap['2'] = 2
+	cardValueMap['3'] = 3
+	cardValueMap['4'] = 4
+	cardValueMap['5'] = 5
+	cardValueMap['6'] = 6
+	cardValueMap['7'] = 7
+	cardValueMap['8'] = 8
+	cardValueMap['9'] = 9
+	cardValueMap['T'] = 10
+	cardValueMap['J'] = ternary(part1, 11, 1)
+	cardValueMap['Q'] = 12
+	cardValueMap['K'] = 13
+	cardValueMap['A'] = 14
 
-		split := strings.Split(line, " ")
+	return cardValueMap
+}
 
-		handStr, bidStr := split[0], split[1]
-
-		bidInt, err := strconv.Atoi(bidStr)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for _, ch := range handStr {
-			cards = append(cards, Card{cardValueMap[ch]})
-		}
-
-		hands = append(hands, Hand{cards, bidInt})
-
+func ternary(cond bool, val1, val2 int) int {
+	if cond {
+		return val1
 	}
 
-	return hands
-}
-
-func getCardMapPart2() map[rune]int {
-	cardValueMap := make(map[rune]int)
-
-	cardValueMap['2'] = 2
-	cardValueMap['3'] = 3
-	cardValueMap['4'] = 4
-	cardValueMap['5'] = 5
-	cardValueMap['6'] = 6
-	cardValueMap['7'] = 7
-	cardValueMap['8'] = 8
-	cardValueMap['9'] = 9
-	cardValueMap['T'] = 10
-	cardValueMap['J'] = 1
-	cardValueMap['Q'] = 12
-	cardValueMap['K'] = 13
-	cardValueMap['A'] = 14
-
-	return cardValueMap
-}
-
-func getCardMap() map[rune]int {
-	cardValueMap := make(map[rune]int)
-
-	cardValueMap['2'] = 2
-	cardValueMap['3'] = 3
-	cardValueMap['4'] = 4
-	cardValueMap['5'] = 5
-	cardValueMap['6'] = 6
-	cardValueMap['7'] = 7
-	cardValueMap['8'] = 8
-	cardValueMap['9'] = 9
-	cardValueMap['T'] = 10
-	cardValueMap['J'] = 11
-	cardValueMap['Q'] = 12
-	cardValueMap['K'] = 13
-	cardValueMap['A'] = 14
-
-	return cardValueMap
+	return val2
 }
