@@ -174,20 +174,6 @@ type Card struct {
 	value int
 }
 
-func sortCardsInHands(hands []Hand) []Hand {
-	newHands := []Hand{}
-
-	for _, hand := range hands {
-		sort.Slice(hand.cards[:], func(i, j int) bool {
-			return hand.cards[i].value < hand.cards[j].value
-		})
-
-		newHands = append(newHands, Hand{hand.cards, hand.bid})
-	}
-
-	return newHands
-}
-
 func parseLines(lines []string, part1 bool) []Hand {
 	cardValueMap := getCardMap(part1)
 
