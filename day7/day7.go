@@ -57,33 +57,6 @@ func main() {
 	}
 }
 
-func rankHandsPart2(hands []Hand) []HandRank {
-	handTypes := []int{}
-	handRanks := []HandRank{}
-
-	for _, hand := range hands {
-		handTypes = append(handTypes, hand.getHandType(false))
-	}
-
-	for idx, hand := range hands {
-		handRanks = append(handRanks, HandRank{hand, handTypes[idx]})
-	}
-	sort.Slice(handRanks[:], func(i, j int) bool {
-		if handRanks[i].t == handRanks[j].t {
-			for idx, card := range handRanks[i].hand.cards {
-				if card.value < handRanks[j].hand.cards[idx].value {
-					return true
-				} else if card.value > handRanks[j].hand.cards[idx].value {
-					return false
-				}
-			}
-		}
-		return handRanks[i].t < handRanks[j].t
-	})
-
-	return handRanks
-}
-
 func rankHands(hands []Hand, part1 bool) []HandRank {
 	handTypes := []int{}
 	handRanks := []HandRank{}
