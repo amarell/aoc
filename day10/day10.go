@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 )
 
 const (
@@ -214,19 +215,17 @@ func findFarthestDistance(g Grid) int {
 	origin := Step{x, y}
 	loops := findLoops(g, origin)
 
-	for _, loop := range loops {
-		fmt.Println(loop)
-	}
-
 	maxLength := len(loops[0])
-	for _, loop := range loops {
+	maxLengthIdx := 0
+	for idx, loop := range loops {
 		if len(loop) > maxLength {
 			maxLength = len(loop)
+			maxLengthIdx = idx
 		}
 	}
 
 	fmt.Println("Part 1:", maxLength/2)
-
+	fmt.Println("Part 2:", getEnclosedTiles(loops[maxLengthIdx], g))
 	return 0
 }
 
@@ -248,6 +247,108 @@ func findLoops(g Grid, origin Step) [][]Step {
 	}
 
 	return loops
+}
+
+func getEnclosedTiles(loop []Step, g Grid) int {
+	minY, maxY := getVerticalExtremes(loop)
+
+	rows := [][]Step{}
+
+	for i := minY; i <= maxY; i++ {
+		row := []Step{}
+
+		for _, step := range loop {
+			if step.y == i {
+				row = append(row, step)
+			}
+		}
+
+		rows = append(rows, sortRow(row))
+	}
+
+	tiles := 0
+	for _, row := range rows {
+		for i := 0; i < len(row)-1; i++ {
+			intersections := countIntersectionsDiagonally(loop, row[i], g)
+			if intersections%2 == 1 {
+				diff := row[i+1].x - row[i].x - 1
+				if diff > 0 {
+					tiles += diff
+				}
+			}
+		}
+	}
+
+	return tiles
+}
+
+// decode the loop (used for debugging XD)
+func printLoop(loop []Step, g Grid) {
+	for y, row := range g.G {
+		for x, ch := range row {
+			if loopContainsStep(loop, Step{x, y}) {
+				fmt.Print(string(ch))
+			} else {
+				fmt.Print(".")
+			}
+		}
+
+		fmt.Println()
+	}
+}
+
+func loopContainsStep(loop []Step, step Step) bool {
+	for _, loopStep := range loop {
+		if step.isEqual(loopStep) {
+			return true
+		}
+	}
+	return false
+}
+
+func countIntersectionsDiagonally(loop []Step, currentStep Step, g Grid) int {
+	count := 0
+	// go diagonally up (towards the left)
+
+	x, y := currentStep.x, currentStep.y
+
+	for x >= 0 && y >= 0 {
+		val, _ := g.getAtXY(x, y)
+
+		if val == "F" || val == "-" || val == "|" || val == "J" || val == "S" {
+			if loopContainsStep(loop, Step{x, y}) {
+				count++
+			}
+		}
+
+		x--
+		y--
+	}
+
+	return count
+}
+
+func sortRow(row []Step) []Step {
+	sort.Slice(row[:], func(i, j int) bool {
+		return row[i].x < row[j].x
+	})
+
+	return row
+}
+
+func getVerticalExtremes(loop []Step) (int, int) {
+	minY, maxY := loop[0].y, loop[0].y
+
+	for _, step := range loop {
+		if step.y < minY {
+			minY = step.y
+		}
+		if step.y > maxY {
+			maxY = step.y
+		}
+	}
+
+	return minY, maxY
 }
 
 func propagate(g Grid, current Step, prev Step) Step {
