@@ -100,12 +100,6 @@ func atoi(str string) int {
 	return strInt
 }
 
-type Lens struct {
-	id          string
-	focalLength int
-	boxNum      int
-}
-
 func getHash(str string) int {
 	res := 0
 
