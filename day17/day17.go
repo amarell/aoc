@@ -140,8 +140,8 @@ func main() {
 
 	grid := NewGrid(G)
 
-	fmt.Println("Part 1: ", dijkstra(grid, true))
-	// fmt.Println("Part 2: ", dijkstra(grid, false))
+	// fmt.Println("Part 1: ", dijkstra(grid, true))
+	fmt.Println("Part 2: ", dijkstra(grid, false))
 }
 
 type NodeA struct {
@@ -162,7 +162,7 @@ func dijkstra(g Grid, part1 bool) int {
 	for pq.Len() > 0 {
 		item := heap.Pop(&pq).(*Item)
 
-		if item.state.r == g.getHeight()-1 && item.state.c == g.getWidth()-1 {
+		if item.state.r == g.getHeight()-1 && item.state.c == g.getWidth()-1 && item.state.indir >= 4 {
 			return item.heatLoss
 		}
 
@@ -176,28 +176,77 @@ func dijkstra(g Grid, part1 bool) int {
 		loss, state := item.heatLoss, item.state
 
 		// {8 11 1 0 1}
-		if state.indir < 3 && !(state.dr == 0 && state.dc == 0) {
+		if state.indir < 4 {
+			// force in same dir
+			if state.dc == 0 && state.dr == 0 {
+				// however if it's the first node, then we need to propel it in the two different directions (right and down)
+				dirs := [][]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+
+				for _, dir := range dirs {
+					nr := state.r + dir[0]
+					nc := state.c + dir[1]
+					if nr >= 0 && nr < g.getHeight() && nc >= 0 && nc < g.getWidth() {
+						heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nr][nc]), state: State{nr, nc, dir[0], dir[1], 1}})
+					}
+				}
+			} else {
+				nr := state.r + state.dr
+				nc := state.c + state.dc
+				if nr >= 0 && nr < g.getHeight() && nc >= 0 && nc < g.getWidth() {
+					heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nr][nc]), state: State{nr, nc, state.dr, state.dc, state.indir + 1}})
+				}
+			}
+		} else {
+			// at this point, we can switch the direction
+			// but we also don't have to, so first try the same dir
+
 			nr := state.r + state.dr
 			nc := state.c + state.dc
 
-			if nr >= 0 && nr < g.getWidth() && nc >= 0 && nc < g.getHeight() {
-				heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nc][nr]), state: State{nr, nc, state.dr, state.dc, state.indir + 1}})
+			if nr >= 0 && nr < g.getHeight() && nc >= 0 && nc < g.getWidth() && state.indir < 10 {
+				heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nr][nc]), state: State{nr, nc, state.dr, state.dc, state.indir + 1}})
 			}
-		}
 
-		dirs := [][]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+			dirs := [][]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
 
-		for _, dir := range dirs {
-			if !(dir[0] == state.dr && dir[1] == state.dc) && !(dir[0] == -state.dr && dir[1] == -state.dc) {
+			for _, dir := range dirs {
 				nr := state.r + dir[0]
 				nc := state.c + dir[1]
 
-				if nr >= 0 && nr < g.getWidth() && nc >= 0 && nc < g.getHeight() {
-					heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nc][nr]), state: State{nr, nc, dir[0], dir[1], 1}})
+				// check that the new destination is within bounds, not reversing and not the same dir as prev
+				if nr >= 0 && nr < g.getHeight() &&
+					nc >= 0 && nc < g.getWidth() &&
+					!(dir[0] == state.dr && dir[1] == state.dc) &&
+					!(dir[0] == -state.dr && dir[1] == -state.dc) {
+					heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nr][nc]), state: State{nr, nc, dir[0], dir[1], 1}})
 				}
 			}
 		}
+		//
+		// 	if state.indir < 3 && !(state.dr == 0 && state.dc == 0) {
+		// 		nr := state.r + state.dr
+		// 		nc := state.c + state.dc
+		//
+		// 		if nr >= 0 && nr < g.getWidth() && nc >= 0 && nc < g.getHeight() {
+		// 			heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nc][nr]), state: State{nr, nc, state.dr, state.dc, state.indir + 1}})
+		// 		}
+		// 	}
+		//
+		// 	dirs := [][]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+		//
+		// 	for _, dir := range dirs {
+		// 		if !(dir[0] == state.dr && dir[1] == state.dc) && !(dir[0] == -state.dr && dir[1] == -state.dc) {
+		// 			nr := state.r + dir[0]
+		// 			nc := state.c + dir[1]
+		//
+		// 			if nr >= 0 && nr < g.getWidth() && nc >= 0 && nc < g.getHeight() {
+		// 				heap.Push(&pq, &Item{heatLoss: loss + atoi(g.G[nc][nr]), state: State{nr, nc, dir[0], dir[1], 1}})
+		// 			}
+		// 		}
+		// 	}
+		// }
 	}
+	// shouldn't reach this :((
 	return -1
 }
 
