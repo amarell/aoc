@@ -1,107 +1,97 @@
 package main
 
 import (
-	"bufio"
+	"aoc/pkg/file"
 	"fmt"
-	"log"
-	"os"
+	"path/filepath"
 )
 
 func main() {
-	file, err := os.Open("./input.txt")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	lines := []string{}
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
+	abs, _ := filepath.Abs("./input.txt")
+	lines, _ := file.ReadInput(abs)
 
 	patterns := getPatterns(lines)
 
-	sum := 0
+	s1 := 0
+	s2 := 0
+
 	for _, pattern := range patterns {
-		_, hIndex := isHorizontalReflection(pattern)
-		isV, vIndex := isVerticalReflection(pattern)
-
-		if isV {
-			sum += vIndex
-		} else {
-			sum += 100 * hIndex
-		}
-
+		s1 += calculateScore(pattern, true)
+		s2 += calculateScore(pattern, false)
 	}
 
-	fmt.Println("Part 1", sum)
+	fmt.Println("Part 1:", s1)
+	fmt.Println("Part 2:", s2)
+}
 
-	if err := scanner.Err(); err != nil {
-		log.Println(err)
+func calculateScore(pattern Pattern, part1 bool) int {
+	_, hIndex := isHorizontalReflection(pattern, part1)
+	isVertical, vIndex := isVerticalReflection(pattern, part1)
+
+	if isVertical {
+		return vIndex
+	} else {
+		return 100 * hIndex
 	}
 }
 
-func isHorizontalReflection(pattern Pattern) (bool, int) {
+func isHorizontalReflection(pattern Pattern, part1 bool) (bool, int) {
 	lines := getColumnsAsLines(pattern)
 
 	for i := 1; i < len(lines[0]); i++ {
 		wrongsForIndex := []int{}
-		// allLinesReflective := true
+		allLinesReflective := true
 		for _, line := range lines {
-			reflective, wrongs := isLineReflective(line, i, false)
-			if !reflective {
-				// allLinesReflective = false
-				// break
+			reflective, wrongs := isLineReflective(line, i, part1)
+
+			if !reflective && part1 {
+				allLinesReflective = false
+				break
 			}
 
 			wrongsForIndex = append(wrongsForIndex, wrongs)
 		}
 
-		// fmt.Println(isSmidge(wrongsForIndex))
-		if isSmidge(wrongsForIndex) {
+		if isSmudge(wrongsForIndex) && !part1 {
 			return true, i
 		}
-		//
-		// if allLinesReflective {
-		// 	return false, i
-		// }
+
+		if allLinesReflective && part1 {
+			return false, i
+		}
 	}
 	return false, -1
 }
 
-func isVerticalReflection(pattern Pattern) (bool, int) {
+func isVerticalReflection(pattern Pattern, part1 bool) (bool, int) {
 	lineLength := len(pattern.lines[0])
 	for i := 1; i < lineLength; i++ {
-		// allLinesReflective := true
+		allLinesReflective := true
 		wrongsForIndex := []int{}
+
 		for _, line := range pattern.lines {
-			reflective, wrongs := isLineReflective(line, i, false)
-			if !reflective {
-				// allLinesReflective = false
-				// break
+			reflective, wrongs := isLineReflective(line, i, part1)
+
+			if !reflective && part1 {
+				allLinesReflective = false
+				break
 			}
 
 			wrongsForIndex = append(wrongsForIndex, wrongs)
 		}
 
-		// fmt.Println(wrongsForIndex)
-		// fmt.Println(isSmidge(wrongsForIndex))
-
-		if isSmidge(wrongsForIndex) {
+		if isSmudge(wrongsForIndex) && !part1 {
 			return true, i
 		}
 
-		// if allLinesReflective {
-		// 	return true, i
-		// }
+		if allLinesReflective && part1 {
+			return true, i
+		}
 	}
 	return false, -1
 }
 
-func isSmidge(wrongsArr []int) bool {
+func isSmudge(wrongsArr []int) bool {
 	countOnes := 0
 
 	for _, i := range wrongsArr {
